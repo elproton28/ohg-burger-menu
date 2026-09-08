@@ -1,18 +1,18 @@
-<!-- 1. Cargar SDKs de Firebase (compatibles) -->
+<!-- 1. Cargar las librerías compatibles de Firebase en el HTML -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script>
-  // 2. Configuración de tu proyecto Firebase
-  // Reemplaza las comillas con los datos de tu consola de Firebase
+  // 2. Tu configuración exacta de Firebase
   const firebaseConfig = {
-    apiKey: "TU_API_KEY",
-    authDomain: "TU_PROYECTO.firebaseapp.com",
-    projectId: "TU_PROYECTO_ID",
-    storageBucket: "TU_PROYECTO.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdef"
+    apiKey: "AIzaSyCCJ8p6ilUahYV6f4DWQUFJY01UXFZWK4",
+    authDomain: "ohg-burger-db.firebaseapp.com",
+    databaseURL: "https://ohg-burger-db-default-rtdb.firebaseio.com",
+    projectId: "ohg-burger-db",
+    storageBucket: "ohg-burger-db.firebasestorage.app",
+    messagingSenderId: "1049128717641",
+    appId: "1:1049128717641:web:b31aafda03ff1a4dca9e98"
   };
 
   // Inicializar Firebase
@@ -23,6 +23,7 @@
   // 3. Cargar y renderizar la galería en tiempo real desde Firestore
   function renderGallery() {
     const container = document.getElementById('galleryContainer');
+    if (!container) return;
 
     db.collection('photos').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
       container.innerHTML = '';
@@ -47,36 +48,33 @@
     });
   }
 
-  // 4. Función para guardar/subir un nuevo producto o foto
+  // 4. Función para guardar o subir un nuevo producto/foto
   async function saveProduct(title, fileInputOrUrl) {
     try {
       let imageUrl = '';
 
-      // Si se seleccionó un archivo de imagen desde el teléfono/computadora
       if (fileInputOrUrl instanceof File) {
         const storageRef = storage.ref(`gallery_photos/${Date.now()}_${fileInputOrUrl.name}`);
         const uploadTask = await storageRef.put(fileInputOrUrl);
         imageUrl = await uploadTask.ref.getDownloadURL();
       } else {
-        // Si se ingresó una URL de imagen directamente
         imageUrl = fileInputOrUrl;
       }
 
-      // Guardar el registro en la base de datos Firestore
       await db.collection('photos').add({
         title: title,
         img: imageUrl,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      console.log("¡Foto o platillo subido correctamente!");
+      console.log("¡Subido correctamente a Firebase!");
     } catch (error) {
       console.error("Error al guardar en Firebase: ", error);
-      alert("Hubo un error al subir la imagen: " + error.message);
+      alert("Error al subir: " + error.message);
     }
   }
 
-  // Inicializar la galería al cargar la página
+  // Inicializar al cargar la página
   document.addEventListener('DOMContentLoaded', () => {
     renderGallery();
   });
