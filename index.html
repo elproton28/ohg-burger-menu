@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OHG Burger | Menú Digital</title>
+  <title>OHG Burger | Galería</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -44,83 +44,50 @@
     }
 
     header p {
-      font-size: 0.95rem;
+      font-size: 1rem;
       color: var(--text-muted);
       margin-top: 5px;
     }
 
     .container {
-      max-width: 600px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 20px 15px;
+      padding: 30px 15px;
     }
 
-    .menu-grid {
+    .gallery-grid {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 20px;
     }
 
-    .card {
+    .gallery-item {
       background-color: var(--card-bg);
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      display: flex;
-      flex-direction: column;
+      transition: transform 0.2s ease;
       position: relative;
     }
 
-    .card-img {
+    .gallery-item:hover {
+      transform: translateY(-5px);
+    }
+
+    .gallery-item img {
       width: 100%;
-      height: 200px;
+      height: 220px;
       object-fit: cover;
+      display: block;
       background-color: #2a2d3d;
     }
 
-    .card-body {
-      padding: 18px;
-    }
-
-    .card-title-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .card-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .card-price {
-      font-size: 1.2rem;
-      font-weight: 800;
-      color: var(--accent-yellow);
-      background: rgba(245, 158, 11, 0.15);
-      padding: 4px 10px;
-      border-radius: 8px;
-    }
-
-    .card-desc {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      line-height: 1.4;
-    }
-
-    .sold-out-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background-color: var(--accent-red);
-      color: #fff;
-      font-weight: 700;
-      font-size: 0.75rem;
-      padding: 4px 10px;
-      border-radius: 6px;
-      text-transform: uppercase;
+    .gallery-item .caption {
+      padding: 15px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      text-align: center;
     }
 
     .admin-fab {
@@ -179,7 +146,7 @@
       color: var(--text-muted);
     }
 
-    .form-group input, .form-group textarea {
+    .form-group input {
       width: 100%;
       padding: 10px;
       border-radius: 8px;
@@ -203,30 +170,27 @@
     .btn-danger { background: var(--accent-red); color: #fff; }
     .btn-secondary { background: #374151; color: #fff; }
   </style>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
   <header>
     <h1>OHG BURGER</h1>
-    <p>Gourmet Burgers & Flavor</p>
+    <p>Galería de Fotos</p>
   </header>
 
   <div class="container">
-    <div id="menuContainer" class="menu-grid">
-      <p style="text-align: center; color: var(--text-muted);">Cargando menú en tiempo real...</p>
-    </div>
+    <div id="galleryContainer" class="gallery-grid"></div>
   </div>
 
+  <!-- Botón flotante para administrar -->
   <button class="admin-fab" onclick="openAdminModal()">⚙️</button>
 
+  <!-- Modal de Administración -->
   <div id="adminModal" class="admin-panel">
     <div class="admin-content">
-      <h2>Administrar Menú</h2>
+      <h2>Administrar Galería</h2>
       
+      <!-- Sección Login -->
       <div id="authSection">
         <div class="form-group">
           <label>Contraseña Administrador</label>
@@ -236,93 +200,66 @@
         <button class="btn btn-secondary" onclick="closeAdminModal()">Cancelar</button>
       </div>
 
+      <!-- Sección Formulario -->
       <div id="formSection" style="display: none;">
-        <form id="productForm" onsubmit="saveProduct(event)">
-          <input type="hidden" id="productId">
+        <form id="photoForm" onsubmit="savePhoto(event)">
           <div class="form-group">
-            <label>Nombre del Platillo</label>
+            <label>Título / Nombre de la foto</label>
             <input type="text" id="pTitle" required placeholder="Ej. Doble Queso Tocino">
           </div>
           <div class="form-group">
-            <label>Precio ($)</label>
-            <input type="text" id="pPrice" required placeholder="Ej. 12.99">
-          </div>
-          <div class="form-group">
-            <label>Descripción</label>
-            <textarea id="pDesc" rows="2" placeholder="Ingredientes cortos..."></textarea>
-          </div>
-          <div class="form-group">
-            <label>URL de Imagen</label>
-            <input type="text" id="pImg" placeholder="https://...">
-          </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="pSoldOut"> Marcar como Agotado
-            </label>
+            <label>URL de la Imagen (Link de foto)</label>
+            <input type="url" id="pImg" required placeholder="https://...">
           </div>
 
-          <button type="submit" class="btn btn-primary">Guardar en la Nube</button>
-          <button type="button" class="btn btn-secondary" onclick="closeAdminModal()">Cerrar</button>
+          <button type="submit" class="btn btn-primary">Agregar a la Galería</button>
+          <button type="button" class="btn btn-secondary" onclick="closeAdminModal()">Cerrar Panel</button>
         </form>
 
         <hr style="border-color: #374151; margin: 20px 0;">
-        <h3 style="font-size: 1rem; color: #fff; margin-bottom: 10px;">Platillos Existentes</h3>
+        <h3 style="font-size: 1rem; color: #fff; margin-bottom: 10px;">Fotos Actuales</h3>
         <div id="adminItemsList"></div>
       </div>
     </div>
   </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyCCJ8p6iLUahYV6f4DWQUFjY01UrXFZwk4",
-      authDomain: "ohg-burger-db.firebaseapp.com",
-      databaseURL: "https://ohg-burger-db-default-rtdb.firebaseio.com",
-      projectId: "ohg-burger-db",
-      storageBucket: "ohg-burger-db.firebasestorage.app",
-      messagingSenderId: "1049128717641",
-      appId: "1:1049128717641:web:b31aafda03ff1a4dca9e98"
-    };
+    // Fotos iniciales por defecto
+    const defaultPhotos = [
+      { id: '1', title: 'Hamburguesa Clásica', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600' },
+      { id: '2', title: 'Doble Queso & Tocino', img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=600' },
+      { id: '3', title: 'Especial OHG', img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?q=80&w=600' },
+      { id: '4', title: 'Papas Preparadas', img: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?q=80&w=600' }
+    ];
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const menuRef = db.ref("menu_items");
+    // Cargar fotos desde almacenamiento local o usar las por defecto
+    function getPhotos() {
+      const stored = localStorage.getItem('ohg_gallery_photos');
+      if (!stored) {
+        localStorage.setItem('ohg_gallery_photos', JSON.stringify(defaultPhotos));
+        return defaultPhotos;
+      }
+      return JSON.parse(stored);
+    }
 
-    let isAdminLoggedIn = false;
+    function renderGallery() {
+      const photos = getPhotos();
+      const container = document.getElementById('galleryContainer');
+      container.innerHTML = '';
 
-    menuRef.on("value", (snapshot) => {
-      const data = snapshot.val();
-      renderMenu(data);
-      if (isAdminLoggedIn) renderAdminList(data);
-    });
-
-    function renderMenu(items) {
-      const container = document.getElementById("menuContainer");
-      container.innerHTML = "";
-
-      if (!items) {
-        container.innerHTML = `<p style="text-align: center; color: var(--text-muted);">No hay productos registrados en el menú.</p>`;
+      if (photos.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">No hay fotos en la galería.</p>';
         return;
       }
 
-      Object.keys(items).forEach(key => {
-        const item = items[key];
-        const card = document.createElement("div");
-        card.className = "card";
-        
-        const imgSrc = item.img || "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=500";
-        
-        card.innerHTML = `
-          ${item.soldOut ? '<div class="sold-out-badge">Agotado</div>' : ''}
-          <img src="${imgSrc}" class="card-img" alt="${item.title}">
-          <div class="card-body">
-            <div class="card-title-row">
-              <span class="card-title">${item.title}</span>
-              <span class="card-price">$${item.price}</span>
-            </div>
-            <p class="card-desc">${item.desc || ''}</p>
-          </div>
+      photos.forEach(photo => {
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.innerHTML = `
+          <img src="${photo.img}" alt="${photo.title}">
+          <div class="caption">${photo.title}</div>
         `;
-        container.appendChild(card);
+        container.appendChild(item);
       });
     }
 
@@ -335,79 +272,64 @@
     }
 
     function loginAdmin() {
-      const pass = document.getElementById("adminPassInput").value;
-      if (pass === "ohg123") {
-        isAdminLoggedIn = true;
+      const pass = document.getElementById("adminPassInput").value.trim();
+      // Contraseña aceptada: ohg123
+      if (pass.toLowerCase() === "ohg123") {
         document.getElementById("authSection").style.display = "none";
         document.getElementById("formSection").style.display = "block";
-        menuRef.once("value", (snapshot) => renderAdminList(snapshot.val()));
+        renderAdminList();
       } else {
-        alert("Contraseña incorrecta");
+        alert("Contraseña incorrecta. Recuerda usar: ohg123");
       }
     }
 
-    function saveProduct(e) {
+    function savePhoto(e) {
       e.preventDefault();
-      const id = document.getElementById("productId").value;
       const title = document.getElementById("pTitle").value;
-      const price = document.getElementById("pPrice").value;
-      const desc = document.getElementById("pDesc").value;
       const img = document.getElementById("pImg").value;
-      const soldOut = document.getElementById("pSoldOut").checked;
 
-      const itemData = { title, price, desc, img, soldOut };
+      const photos = getPhotos();
+      photos.push({ id: Date.now().toString(), title, img });
 
-      if (id) {
-        menuRef.child(id).update(itemData);
-      } else {
-        menuRef.push(itemData);
-      }
+      localStorage.setItem('ohg_gallery_photos', JSON.stringify(photos));
 
-      resetForm();
+      document.getElementById("photoForm").reset();
+      renderGallery();
+      renderAdminList();
+      alert("¡Foto agregada con éxito!");
     }
 
-    function editItem(id, title, price, desc, img, soldOut) {
-      document.getElementById("productId").value = id;
-      document.getElementById("pTitle").value = title;
-      document.getElementById("pPrice").value = price;
-      document.getElementById("pDesc").value = desc;
-      document.getElementById("pImg").value = img;
-      document.getElementById("pSoldOut").checked = soldOut;
-    }
-
-    function deleteItem(id) {
-      if (confirm("¿Seguro que deseas eliminar este platillo?")) {
-        menuRef.child(id).remove();
+    function deletePhoto(id) {
+      if (confirm("¿Seguro que deseas eliminar esta foto de la galería?")) {
+        let photos = getPhotos();
+        photos = photos.filter(p => p.id !== id);
+        localStorage.setItem('ohg_gallery_photos', JSON.stringify(photos));
+        renderGallery();
+        renderAdminList();
       }
     }
 
-    function resetForm() {
-      document.getElementById("productId").value = "";
-      document.getElementById("productForm").reset();
-    }
-
-    function renderAdminList(items) {
+    function renderAdminList() {
+      const photos = getPhotos();
       const listContainer = document.getElementById("adminItemsList");
       listContainer.innerHTML = "";
-      if (!items) return;
 
-      Object.keys(items).forEach(id => {
-        const item = items[id];
+      photos.forEach(photo => {
         const row = document.createElement("div");
         row.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #111827; padding: 10px; border-radius: 8px;";
         row.innerHTML = `
-          <div>
-            <strong style="color: #fff;">${item.title}</strong>
-            <span style="color: var(--accent-yellow); font-size: 0.85rem;"> ($${item.price})</span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="${photo.img}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">
+            <strong style="color: #fff; font-size: 0.9rem;">${photo.title}</strong>
           </div>
-          <div>
-            <button class="btn btn-secondary" style="width: auto; padding: 4px 8px; margin: 0 4px;" onclick="editItem('${id}', '${item.title}', '${item.price}', '${item.desc || ''}', '${item.img || ''}', ${item.soldOut})">✏️</button>
-            <button class="btn btn-danger" style="width: auto; padding: 4px 8px; margin: 0;" onclick="deleteItem('${id}')">🗑️</button>
-          </div>
+          <button class="btn btn-danger" style="width: auto; padding: 4px 10px; margin: 0;" onclick="deletePhoto('${photo.id}')">🗑️ Eliminar</button>
         `;
         listContainer.appendChild(row);
       });
     }
+
+    // Inicializar galería
+    renderGallery();
   </script>
 </body>
 </html>
