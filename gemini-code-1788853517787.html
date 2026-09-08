@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OHG Burger | Galería</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0b0b;
+            --card-bg: #161616;
+            --accent: #ffb703;
+            --text: #ffffff;
+            --text-muted: #888888;
+            --border: #222222;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text); padding-bottom: 80px; }
+
+        header { text-align: center; padding: 40px 20px 20px; }
+        .logo-badge { display: inline-block; background: var(--accent); color: #000; font-weight: 800; font-size: 22px; padding: 8px 16px; border-radius: 50px; margin-bottom: 10px; }
+        h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+        p.tagline { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+
+        /* Contenedor de la Galería en Cuadrícula */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        @media (min-width: 500px) {
+            .gallery-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .gallery-item {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+            aspect-ratio: 1 / 1; /* Cuadradas perfectas */
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Botón Flotante de Administración */
+        .admin-float-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: #000;
+            font-size: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 183, 3, 0.4);
+            border: none;
+            z-index: 100;
+        }
+
+        /* Modales */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 200; overflow-y: auto; padding: 20px; }
+        .modal-content { background: var(--card-bg); max-width: 450px; margin: 40px auto; border-radius: 20px; padding: 24px; border: 1px solid var(--border); position: relative; }
+        .close-btn { position: absolute; top: 16px; right: 20px; font-size: 24px; color: var(--text-muted); cursor: pointer; }
+        .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
+        .form-control { width: 100%; background: #0b0b0b; border: 1px solid var(--border); color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 14px; outline: none; }
+        .btn-primary { width: 100%; background: var(--accent); color: #000; font-weight: 700; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 15px; margin-top: 10px; }
+        .btn-danger { background: #e63946; color: #fff; border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; }
+
+        .admin-item-row { display: flex; align-items: center; justify-content: space-between; background: #0b0b0b; padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; border: 1px solid var(--border); }
+        .admin-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-badge">OHG</div>
+        <h1>GALERÍA</h1>
+        <p class="tagline">Momentos y Creaciones</p>
+    </header>
+
+    <!-- Cuadrícula de la Galería -->
+    <div class="gallery-grid" id="galleryContainer"></div>
+
+    <!-- Botón Configuración / Admin -->
+    <button class="admin-float-btn" onclick="openAdmin()">⚙️</button>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAdmin()">&times;</span>
+            
+            <div id="loginView">
+                <div class="modal-title">🔐 Administrar Galería</div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="passInput" class="form-control" placeholder="admin123">
+                </div>
+                <button class="btn-primary" onclick="tryLogin()">Entrar</button>
+            </div>
+
+            <div id="dashboardView" style="display: none;">
+                <div class="modal-title">📸 Subir Nueva Foto</div>
+                
+                <form onsubmit="handleAddPhoto(event)" style="margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Seleccionar Imagen</label>
+                        <input type="file" id="photoFile" class="form-control" accept="image/*" required style="padding: 6px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Título o Descripción corta (Opcional)</label>
+                        <input type="text" id="photoTitle" class="form-control" placeholder="Ej. Doble con tocino">
+                    </div>
+                    <button class="btn-primary" type="submit">Subir a la Galería</button>
+                </form>
+
+                <div id="adminList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let defaultPhotos = [
+            { image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80", title: "Double Cheeseburger" },
+            { image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80", title: "Papas Trufadas" },
+            { image: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80", title: "Clasica OHG" }
+        ];
+
+        let photos = JSON.parse(localStorage.getItem('ohg_gallery')) || defaultPhotos;
+        let base64Temp = "";
+
+        function saveStorage() {
+            localStorage.setItem('ohg_gallery', JSON.stringify(photos));
+        }
+
+        function renderGallery() {
+            const container = document.getElementById('galleryContainer');
+            container.innerHTML = '';
+            photos.forEach(item => {
+                container.innerHTML += `
+                    <div class="gallery-item">
+                        <img src="${item.image}" alt="${item.title || 'Foto'}">
+                    </div>
+                `;
+            });
+        }
+
+        document.getElementById('photoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) { base64Temp = evt.target.result; }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function openAdmin() { document.getElementById('adminModal').style.display = 'block'; }
+        function closeAdmin() { document.getElementById('adminModal').style.display = 'none'; }
+
+        function tryLogin() {
+            if(document.getElementById('passInput').value === 'admin123') {
+                document.getElementById('loginView').style.display = 'none';
+                document.getElementById('dashboardView').style.display = 'block';
+                renderAdminList();
+            } else {
+                alert('Contraseña incorrecta (Usa: admin123)');
+            }
+        }
+
+        function renderAdminList() {
+            const list = document.getElementById('adminList');
+            list.innerHTML = '<h3 style="font-size:13px; margin-bottom:8px; color:var(--text-muted);">Administrar Fotos</h3>';
+            photos.forEach((item, idx) => {
+                list.innerHTML += `
+                    <div class="admin-item-row">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <img src="${item.image}" class="admin-thumb">
+                            <span style="font-size:13px;">${item.title || 'Sin título'}</span>
+                        </div>
+                        <button class="btn-danger" onclick="deletePhoto(${idx})">Borrar</button>
+                    </div>
+                `;
+            });
+        }
+
+        function handleAddPhoto(event) {
+            event.preventDefault();
+            if(!base64Temp) return;
+
+            photos.unshift({
+                image: base64Temp,
+                title: document.getElementById('photoTitle').value
+            });
+
+            saveStorage();
+            renderGallery();
+            renderAdminList();
+
+            document.getElementById('photoFile').value = '';
+            document.getElementById('photoTitle').value = '';
+            base64Temp = "";
+        }
+
+        function deletePhoto(idx) {
+            if(confirm('¿Eliminar esta foto de la galería?')) {
+                photos.splice(idx, 1);
+                saveStorage();
+                renderGallery();
+                renderAdminList();
+            }
+        }
+
+        renderGallery();
+    </script>
+</body>
+</html>
