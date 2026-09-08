@@ -1,402 +1,83 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OHG Burger | Galería</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg-dark: #0f1016;
-      --card-bg: #1a1c24;
-      --accent-yellow: #f59e0b;
-      --accent-red: #ef4444;
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-    }
+<!-- 1. Cargar SDKs de Firebase (compatibles) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Poppins', sans-serif;
-    }
+<script>
+  // 2. Configuración de tu proyecto Firebase
+  // Reemplaza las comillas con los datos de tu consola de Firebase
+  const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_PROYECTO.firebaseapp.com",
+    projectId: "TU_PROYECTO_ID",
+    storageBucket: "TU_PROYECTO.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdef"
+  };
 
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      padding-bottom: 80px;
-    }
+  // Inicializar Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const storage = firebase.storage();
 
-    header {
-      background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(15,16,22,1) 100%),
-                  url('https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=800') center/cover;
-      padding: 40px 20px;
-      text-align: center;
-      border-bottom: 3px solid var(--accent-yellow);
-    }
+  // 3. Cargar y renderizar la galería en tiempo real desde Firestore
+  function renderGallery() {
+    const container = document.getElementById('galleryContainer');
 
-    header h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: var(--accent-yellow);
-      letter-spacing: 1px;
-    }
-
-    header p {
-      font-size: 1rem;
-      color: var(--text-muted);
-      margin-top: 5px;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 30px 15px;
-    }
-
-    .gallery-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px;
-    }
-
-    .gallery-item {
-      background-color: var(--card-bg);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      transition: transform 0.2s ease;
-      position: relative;
-    }
-
-    .gallery-item:hover {
-      transform: translateY(-5px);
-    }
-
-    .gallery-item img {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-      display: block;
-      background-color: #2a2d3d;
-    }
-
-    .gallery-item .caption {
-      padding: 15px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-main);
-      text-align: center;
-    }
-
-    .admin-fab {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background-color: var(--accent-yellow);
-      color: #000;
-      border: none;
-      font-size: 1.4rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-      cursor: pointer;
-      z-index: 100;
-    }
-
-    .admin-panel {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(5px);
-      z-index: 200;
-      overflow-y: auto;
-      padding: 20px 15px;
-    }
-
-    .admin-content {
-      max-width: 500px;
-      margin: 40px auto;
-      background: var(--card-bg);
-      padding: 25px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .admin-content h2 {
-      color: var(--accent-yellow);
-      margin-bottom: 15px;
-      font-size: 1.4rem;
-    }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.85rem;
-      margin-bottom: 5px;
-      color: var(--text-muted);
-    }
-
-    .form-group input[type="text"], .form-group input[type="password"] {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #374151;
-      background: #111827;
-      color: #fff;
-      font-size: 0.95rem;
-    }
-
-    .file-input-wrapper {
-      position: relative;
-      background: #111827;
-      border: 1px dashed var(--accent-yellow);
-      border-radius: 8px;
-      padding: 15px;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    .file-input-wrapper input[type="file"] {
-      position: absolute;
-      left: 0; top: 0; width: 100%; height: 100%;
-      opacity: 0;
-      cursor: pointer;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .btn-primary { background: var(--accent-yellow); color: #000; }
-    .btn-danger { background: var(--accent-red); color: #fff; }
-    .btn-secondary { background: #374151; color: #fff; }
-
-    #previewImg {
-      max-width: 100%;
-      height: 120px;
-      object-fit: cover;
-      border-radius: 8px;
-      margin-top: 10px;
-      display: none;
-    }
-  </style>
-</head>
-<body>
-
-  <header>
-    <h1>OHG BURGER</h1>
-    <p>Galería de Fotos</p>
-  </header>
-
-  <div class="container">
-    <div id="galleryContainer" class="gallery-grid"></div>
-  </div>
-
-  <!-- Botón flotante -->
-  <button class="admin-fab" onclick="openAdminModal()">⚙️</button>
-
-  <!-- Modal de Administración -->
-  <div id="adminModal" class="admin-panel">
-    <div class="admin-content">
-      <h2>Administrar Galería</h2>
-      
-      <!-- Sección Login -->
-      <div id="authSection">
-        <div class="form-group">
-          <label>Contraseña Administrador</label>
-          <input type="password" id="adminPassInput" placeholder="Ingresa la contraseña">
-        </div>
-        <button class="btn btn-primary" onclick="loginAdmin()">Ingresar</button>
-        <button class="btn btn-secondary" onclick="closeAdminModal()">Cancelar</button>
-      </div>
-
-      <!-- Sección Formulario -->
-      <div id="formSection" style="display: none;">
-        <form id="photoForm" onsubmit="savePhoto(event)">
-          <div class="form-group">
-            <label>Título / Nombre de la foto</label>
-            <input type="text" id="pTitle" required placeholder="Ej. Doble Queso Tocino">
-          </div>
-
-          <div class="form-group">
-            <label>Foto de la Galería del Celular</label>
-            <div class="file-input-wrapper">
-              <span id="fileLabel">📁 Seleccionar imagen de tu celular</span>
-              <input type="file" id="pFileInput" accept="image/*" onchange="handleFileSelect(event)" required>
-            </div>
-            <img id="previewImg" alt="Vista previa">
-          </div>
-
-          <button type="submit" class="btn btn-primary">Agregar a la Galería</button>
-          <button type="button" class="btn btn-secondary" onclick="closeAdminModal()">Cerrar Panel</button>
-        </form>
-
-        <hr style="border-color: #374151; margin: 20px 0;">
-        <h3 style="font-size: 1rem; color: #fff; margin-bottom: 10px;">Fotos Actuales</h3>
-        <div id="adminItemsList"></div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    let currentBase64Image = "";
-
-    const defaultPhotos = [
-      { id: '1', title: 'Hamburguesa Clásica', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600' },
-      { id: '2', title: 'Doble Queso & Tocino', img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=600' },
-      { id: '3', title: 'Especial OHG', img: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?q=80&w=600' },
-      { id: '4', title: 'Papas Preparadas', img: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?q=80&w=600' }
-    ];
-
-    function getPhotos() {
-      const stored = localStorage.getItem('ohg_gallery_photos');
-      if (!stored) {
-        localStorage.setItem('ohg_gallery_photos', JSON.stringify(defaultPhotos));
-        return defaultPhotos;
-      }
-      return JSON.parse(stored);
-    }
-
-    function renderGallery() {
-      const photos = getPhotos();
-      const container = document.getElementById('galleryContainer');
+    db.collection('photos').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
       container.innerHTML = '';
 
-      if (photos.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">No hay fotos en la galería.</p>';
+      if (snapshot.empty) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No hay fotos disponibles.</p>';
         return;
       }
 
-      photos.forEach(photo => {
+      snapshot.forEach((doc) => {
+        const photo = doc.data();
         const item = document.createElement('div');
         item.className = 'gallery-item';
         item.innerHTML = `
           <img src="${photo.img}" alt="${photo.title}">
-          <div class="caption">${photo.title}</div>
+          <h3>${photo.title}</h3>
         `;
         container.appendChild(item);
       });
-    }
+    }, (error) => {
+      console.error("Error al obtener imágenes: ", error);
+    });
+  }
 
-    function openAdminModal() {
-      document.getElementById("adminModal").style.display = "block";
-    }
+  // 4. Función para guardar/subir un nuevo producto o foto
+  async function saveProduct(title, fileInputOrUrl) {
+    try {
+      let imageUrl = '';
 
-    function closeAdminModal() {
-      document.getElementById("adminModal").style.display = "none";
-    }
-
-    function loginAdmin() {
-      const pass = document.getElementById("adminPassInput").value.trim();
-      if (pass.toLowerCase() === "ohg123") {
-        document.getElementById("authSection").style.display = "none";
-        document.getElementById("formSection").style.display = "block";
-        renderAdminList();
+      // Si se seleccionó un archivo de imagen desde el teléfono/computadora
+      if (fileInputOrUrl instanceof File) {
+        const storageRef = storage.ref(`gallery_photos/${Date.now()}_${fileInputOrUrl.name}`);
+        const uploadTask = await storageRef.put(fileInputOrUrl);
+        imageUrl = await uploadTask.ref.getDownloadURL();
       } else {
-        alert("Contraseña incorrecta. Recuerda usar: ohg123");
-      }
-    }
-
-    function handleFileSelect(event) {
-      const file = event.target.files[0];
-      if (file) {
-        document.getElementById("fileLabel").textContent = "📷 " + file.name;
-        
-        // Redimensionar y convertir la foto para no saturar memoria
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = new Image();
-          img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const maxWidth = 800;
-            const scale = maxWidth / img.width;
-            
-            canvas.width = maxWidth;
-            canvas.height = img.height * scale;
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
-            currentBase64Image = canvas.toDataURL('image/jpeg', 0.8);
-            const preview = document.getElementById("previewImg");
-            preview.src = currentBase64Image;
-            preview.style.display = "block";
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function savePhoto(e) {
-      e.preventDefault();
-      const title = document.getElementById("pTitle").value;
-
-      if (!currentBase64Image) {
-        alert("Por favor selecciona una imagen de tu celular.");
-        return;
+        // Si se ingresó una URL de imagen directamente
+        imageUrl = fileInputOrUrl;
       }
 
-      const photos = getPhotos();
-      photos.push({ id: Date.now().toString(), title, img: currentBase64Image });
-
-      localStorage.setItem('ohg_gallery_photos', JSON.stringify(photos));
-
-      document.getElementById("photoForm").reset();
-      document.getElementById("fileLabel").textContent = "📁 Seleccionar imagen de tu celular";
-      document.getElementById("previewImg").style.display = "none";
-      currentBase64Image = "";
-
-      renderGallery();
-      renderAdminList();
-      alert("¡Foto agregada a tu galería!");
-    }
-
-    function deletePhoto(id) {
-      if (confirm("¿Seguro que deseas eliminar esta foto de la galería?")) {
-        let photos = getPhotos();
-        photos = photos.filter(p => p.id !== id);
-        localStorage.setItem('ohg_gallery_photos', JSON.stringify(photos));
-        renderGallery();
-        renderAdminList();
-      }
-    }
-
-    function renderAdminList() {
-      const photos = getPhotos();
-      const listContainer = document.getElementById("adminItemsList");
-      listContainer.innerHTML = "";
-
-      photos.forEach(photo => {
-        const row = document.createElement("div");
-        row.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #111827; padding: 10px; border-radius: 8px;";
-        row.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="${photo.img}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">
-            <strong style="color: #fff; font-size: 0.9rem;">${photo.title}</strong>
-          </div>
-          <button class="btn btn-danger" style="width: auto; padding: 4px 10px; margin: 0;" onclick="deletePhoto('${photo.id}')">🗑️ Eliminar</button>
-        `;
-        listContainer.appendChild(row);
+      // Guardar el registro en la base de datos Firestore
+      await db.collection('photos').add({
+        title: title,
+        img: imageUrl,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-    }
 
+      console.log("¡Foto o platillo subido correctamente!");
+    } catch (error) {
+      console.error("Error al guardar en Firebase: ", error);
+      alert("Hubo un error al subir la imagen: " + error.message);
+    }
+  }
+
+  // Inicializar la galería al cargar la página
+  document.addEventListener('DOMContentLoaded', () => {
     renderGallery();
-  </script>
-</body>
-</html>
+  });
+</script>
