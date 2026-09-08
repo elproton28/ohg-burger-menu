@@ -1,81 +1,133 @@
-<!-- 1. Cargar las librerías compatibles de Firebase en el HTML -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
-<script>
-  // 2. Tu configuración exacta de Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyCCJ8p6ilUahYV6f4DWQUFJY01UXFZWK4",
-    authDomain: "ohg-burger-db.firebaseapp.com",
-    databaseURL: "https://ohg-burger-db-default-rtdb.firebaseio.com",
-    projectId: "ohg-burger-db",
-    storageBucket: "ohg-burger-db.firebasestorage.app",
-    messagingSenderId: "1049128717641",
-    appId: "1:1049128717641:web:b31aafda03ff1a4dca9e98"
-  };
-
-  // Inicializar Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const storage = firebase.storage();
-
-  // 3. Cargar y renderizar la galería en tiempo real desde Firestore
-  function renderGallery() {
-    const container = document.getElementById('galleryContainer');
-    if (!container) return;
-
-    db.collection('photos').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
-      container.innerHTML = '';
-
-      if (snapshot.empty) {
-        container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No hay fotos disponibles.</p>';
-        return;
-      }
-
-      snapshot.forEach((doc) => {
-        const photo = doc.data();
-        const item = document.createElement('div');
-        item.className = 'gallery-item';
-        item.innerHTML = `
-          <img src="${photo.img}" alt="${photo.title}">
-          <h3>${photo.title}</h3>
-        `;
-        container.appendChild(item);
-      });
-    }, (error) => {
-      console.error("Error al obtener imágenes: ", error);
-    });
-  }
-
-  // 4. Función para guardar o subir un nuevo producto/foto
-  async function saveProduct(title, fileInputOrUrl) {
-    try {
-      let imageUrl = '';
-
-      if (fileInputOrUrl instanceof File) {
-        const storageRef = storage.ref(`gallery_photos/${Date.now()}_${fileInputOrUrl.name}`);
-        const uploadTask = await storageRef.put(fileInputOrUrl);
-        imageUrl = await uploadTask.ref.getDownloadURL();
-      } else {
-        imageUrl = fileInputOrUrl;
-      }
-
-      await db.collection('photos').add({
-        title: title,
-        img: imageUrl,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      console.log("¡Subido correctamente a Firebase!");
-    } catch (error) {
-      console.error("Error al guardar en Firebase: ", error);
-      alert("Error al subir: " + error.message);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OG Burger Gallery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f1016;
+      --card-bg: #1a1c24;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
     }
-  }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding-bottom: 80px;
+    }
+    header {
+      text-align: center;
+      padding: 30px 20px;
+    }
+    header h1 {
+      color: var(--accent-yellow);
+      font-size: 2rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .gallery-item {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .gallery-item img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .gallery-item h3 {
+      padding: 15px;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
 
-  // Inicializar al cargar la página
-  document.addEventListener('DOMContentLoaded', () => {
-    renderGallery();
-  });
-</script>
+  <header>
+     <h1>OG Burger Gallery</h1>
+  </header>
+
+  <div class="container">
+    <!-- Aquí se pintarán las imágenes automáticamente desde Firebase -->
+    <div id="galleryContainer" class="gallery-grid">
+      <p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">Cargando menú desde la nube...</p>
+    </div>
+  </div>
+
+  <!-- SDKs de Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+  <script>
+    // Configuración de Firebase con tus datos reales
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCJ8p6ilUahYV6f4DWQUFJY01UXFZWK4",
+      authDomain: "ohg-burger-db.firebaseapp.com",
+      databaseURL: "https://ohg-burger-db-default-rtdb.firebaseio.com",
+      projectId: "ohg-burger-db",
+      storageBucket: "ohg-burger-db.firebasestorage.app",
+      messagingSenderId: "1049128717641",
+      appId: "1:1049128717641:web:b31aafda03ff1a4dca9e98"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // Renderizar la galería en tiempo real desde Firestore
+    function renderGallery() {
+      const container = document.getElementById('galleryContainer');
+      if (!container) return;
+
+      db.collection('photos').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+        container.innerHTML = '';
+
+        if (snapshot.empty) {
+          container.innerHTML = '<p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">No hay fotos registradas todavía.</p>';
+          return;
+        }
+
+        snapshot.forEach((doc) => {
+          const photo = doc.data();
+          const item = document.createElement('div');
+          item.className = 'gallery-item';
+          item.innerHTML = `
+            <img src="${photo.img}" alt="${photo.title}">
+            <h3>${photo.title}</h3>
+          `;
+          container.appendChild(item);
+        });
+      }, (error) => {
+        console.error("Error al obtener imágenes: ", error);
+      });
+    }
+
+    // Inicializar al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+      renderGallery();
+    });
+  </script>
+</body>
+</html>
