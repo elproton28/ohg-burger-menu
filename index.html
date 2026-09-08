@@ -69,7 +69,7 @@
       font-weight: 500;
     }
 
-    /* Botón flotante discreto de Administrador (abajo a la derecha) */
+    /* Botón flotante discreto */
     .admin-fab {
       position: fixed;
       bottom: 25px;
@@ -94,7 +94,7 @@
       transform: scale(1.08);
     }
 
-    /* Ventana Modal de Administración (Oculta por defecto) */
+    /* Modal */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -171,6 +171,9 @@
     .btn-close:hover {
       background-color: #4b5563;
     }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -180,31 +183,35 @@
   </header>
 
   <div class="container">
-    <!-- Galería limpia idéntica al diseño original -->
     <div id="galleryContainer" class="gallery-grid">
       <p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">Cargando menú...</p>
     </div>
   </div>
 
-  <!-- Botón flotante para administrador (solo tú lo usas) -->
-  <button class="admin-fab" onclick="openAdminModal()" title="Agregar Platillo">＋</button>
+  <!-- Botón flotante de administrador -->
+  <button class="admin-fab" onclick="pedirPassword()" title="Administrar">＋</button>
 
-  <!-- Modal oculto para subir imágenes -->
+  <!-- Modal de Administración Protegido -->
   <div id="adminModal" class="modal-overlay">
     <div class="modal-content">
-      <h2>Agregar Nuevo Platillo</h2>
-      <div class="form-group">
-        <label>Nombre del Platillo</label>
-        <input type="text" id="photoTitle" placeholder="Ej. Hamburguesa Clásica">
+      <h2>Panel de Administración</h2>
+      
+      <!-- Formulario de Subida (Oculto hasta poner contraseña correcta) -->
+      <div id="uploadFormSection" class="hidden">
+        <div class="form-group">
+          <label>Nombre del Platillo</label>
+          <input type="text" id="photoTitle" placeholder="Ej. Hamburguesa Clásica">
+        </div>
+        <div class="form-group">
+          <label>Seleccionar Imagen</label>
+          <input type="file" id="photoFile" accept="image/*">
+        </div>
+        <div class="modal-buttons">
+          <button class="btn-close" onclick="closeAdminModal()">Cancelar</button>
+          <button class="btn-submit" id="uploadBtn" onclick="handleUpload()">Subir a la Nube</button>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Seleccionar Imagen</label>
-        <input type="file" id="photoFile" accept="image/*">
-      </div>
-      <div class="modal-buttons">
-        <button class="btn-close" onclick="closeAdminModal()">Cancelar</button>
-        <button class="btn-submit" id="uploadBtn" onclick="handleUpload()">Subir</button>
-      </div>
+
     </div>
   </div>
 
@@ -230,15 +237,27 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    // Funciones del Modal
-    function openAdminModal() {
-      document.getElementById('adminModal').style.display = 'flex';
-    }
-    function closeAdminModal() {
-      document.getElementById('adminModal').style.display = 'none';
+    // Contraseña de administrador (cámbiala por la que prefieras)
+    const ADMIN_PASSWORD = "ohgburger2026";
+
+    function pedirPassword() {
+      const pass = prompt("Ingresa la contraseña de administrador:");
+      if (pass === ADMIN_PASSWORD) {
+        document.getElementById('adminModal').style.display = 'flex';
+        document.getElementById('uploadFormSection').classList.remove('hidden');
+      } else if (pass !== null) {
+        alert("Contraseña incorrecta.");
+      }
     }
 
-    // Renderizar la galería en tiempo real desde Firestore
+    function closeAdminModal() {
+      document.getElementById('adminModal').style.display = 'none';
+      document.getElementById('uploadFormSection').classList.add('hidden');
+      document.getElementById('photoTitle').value = '';
+      document.getElementById('photoFile').value = '';
+    }
+
+    // Renderizar galería
     function renderGallery() {
       const container = document.getElementById('galleryContainer');
       if (!container) return;
@@ -266,7 +285,7 @@
       });
     }
 
-    // Subir imagen y guardar en la nube
+    // Subir imagen con control de errores para que no se quede bloqueado
     async function handleUpload() {
       const titleInput = document.getElementById('photoTitle');
       const fileInput = document.getElementById('photoFile');
@@ -289,27 +308,24 @@
         const uploadTask = await storageRef.put(file);
         const imageUrl = await uploadTask.ref.getDownloadURL();
 
-        // 2. Guardar en Firestore Database
+        // 2. Guardar en Firestore
         await db.collection('photos').add({
           title: title,
           img: imageUrl,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Limpiar y cerrar modal
-        titleInput.value = '';
-        fileInput.value = '';
+        alert("¡Platillo subido con éxito!");
         closeAdminModal();
       } catch (error) {
-        console.error("Error al subir:", error);
-        alert("Error al subir la imagen: " + error.message);
+        console.error("Error detallado al subir:", error);
+        alert("Error al subir: " + error.message);
       } finally {
-        btn.innerText = "Subir";
+        btn.innerText = "Subir a la Nube";
         btn.disabled = false;
       }
     }
 
-    // Inicializar al cargar la página
     document.addEventListener('DOMContentLoaded', () => {
       renderGallery();
     });
