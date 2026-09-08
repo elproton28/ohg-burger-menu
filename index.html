@@ -146,7 +146,7 @@
       color: var(--text-muted);
     }
 
-    .form-group input {
+    .form-group input[type="text"], .form-group input[type="password"] {
       width: 100%;
       padding: 10px;
       border-radius: 8px;
@@ -154,6 +154,23 @@
       background: #111827;
       color: #fff;
       font-size: 0.95rem;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      background: #111827;
+      border: 1px dashed var(--accent-yellow);
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      left: 0; top: 0; width: 100%; height: 100%;
+      opacity: 0;
+      cursor: pointer;
     }
 
     .btn {
@@ -169,6 +186,15 @@
     .btn-primary { background: var(--accent-yellow); color: #000; }
     .btn-danger { background: var(--accent-red); color: #fff; }
     .btn-secondary { background: #374151; color: #fff; }
+
+    #previewImg {
+      max-width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -182,7 +208,7 @@
     <div id="galleryContainer" class="gallery-grid"></div>
   </div>
 
-  <!-- Botón flotante para administrar -->
+  <!-- Botón flotante -->
   <button class="admin-fab" onclick="openAdminModal()">⚙️</button>
 
   <!-- Modal de Administración -->
@@ -207,9 +233,14 @@
             <label>Título / Nombre de la foto</label>
             <input type="text" id="pTitle" required placeholder="Ej. Doble Queso Tocino">
           </div>
+
           <div class="form-group">
-            <label>URL de la Imagen (Link de foto)</label>
-            <input type="url" id="pImg" required placeholder="https://...">
+            <label>Foto de la Galería del Celular</label>
+            <div class="file-input-wrapper">
+              <span id="fileLabel">📁 Seleccionar imagen de tu celular</span>
+              <input type="file" id="pFileInput" accept="image/*" onchange="handleFileSelect(event)" required>
+            </div>
+            <img id="previewImg" alt="Vista previa">
           </div>
 
           <button type="submit" class="btn btn-primary">Agregar a la Galería</button>
@@ -224,7 +255,8 @@
   </div>
 
   <script>
-    // Fotos iniciales por defecto
+    let currentBase64Image = "";
+
     const defaultPhotos = [
       { id: '1', title: 'Hamburguesa Clásica', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600' },
       { id: '2', title: 'Doble Queso & Tocino', img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=600' },
@@ -232,7 +264,6 @@
       { id: '4', title: 'Papas Preparadas', img: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?q=80&w=600' }
     ];
 
-    // Cargar fotos desde almacenamiento local o usar las por defecto
     function getPhotos() {
       const stored = localStorage.getItem('ohg_gallery_photos');
       if (!stored) {
@@ -273,7 +304,6 @@
 
     function loginAdmin() {
       const pass = document.getElementById("adminPassInput").value.trim();
-      // Contraseña aceptada: ohg123
       if (pass.toLowerCase() === "ohg123") {
         document.getElementById("authSection").style.display = "none";
         document.getElementById("formSection").style.display = "block";
@@ -283,20 +313,58 @@
       }
     }
 
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById("fileLabel").textContent = "📷 " + file.name;
+        
+        // Redimensionar y convertir la foto para no saturar memoria
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const maxWidth = 800;
+            const scale = maxWidth / img.width;
+            
+            canvas.width = maxWidth;
+            canvas.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            currentBase64Image = canvas.toDataURL('image/jpeg', 0.8);
+            const preview = document.getElementById("previewImg");
+            preview.src = currentBase64Image;
+            preview.style.display = "block";
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
     function savePhoto(e) {
       e.preventDefault();
       const title = document.getElementById("pTitle").value;
-      const img = document.getElementById("pImg").value;
+
+      if (!currentBase64Image) {
+        alert("Por favor selecciona una imagen de tu celular.");
+        return;
+      }
 
       const photos = getPhotos();
-      photos.push({ id: Date.now().toString(), title, img });
+      photos.push({ id: Date.now().toString(), title, img: currentBase64Image });
 
       localStorage.setItem('ohg_gallery_photos', JSON.stringify(photos));
 
       document.getElementById("photoForm").reset();
+      document.getElementById("fileLabel").textContent = "📁 Seleccionar imagen de tu celular";
+      document.getElementById("previewImg").style.display = "none";
+      currentBase64Image = "";
+
       renderGallery();
       renderAdminList();
-      alert("¡Foto agregada con éxito!");
+      alert("¡Foto agregada a tu galería!");
     }
 
     function deletePhoto(id) {
@@ -328,7 +396,6 @@
       });
     }
 
-    // Inicializar galería
     renderGallery();
   </script>
 </body>
