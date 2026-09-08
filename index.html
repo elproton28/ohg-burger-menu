@@ -1,18 +1,413 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OHG Burger | Menú Digital</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f1016;
+      --card-bg: #1a1c24;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCCJ8p6iLUahYV6f4DwQUFjY01UrXFZWk4",
-  authDomain: "ohg-burger-db.firebaseapp.com",
-  databaseURL: "https://ohg-burger-db-default-rtdb.firebaseio.com",
-  projectId: "ohg-burger-db",
-  storageBucket: "ohg-burger-db.firebasestorage.app",
-  messagingSenderId: "1049128717641",
-  appId: "1:1049128717641:web:b31aafda03ff1a4dca9e98"
-};
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+    }
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding-bottom: 80px;
+    }
+
+    header {
+      background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(15,16,22,1) 100%),
+                  url('https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=800') center/cover;
+      padding: 40px 20px;
+      text-align: center;
+      border-bottom: 3px solid var(--accent-yellow);
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent-yellow);
+      letter-spacing: 1px;
+    }
+
+    header p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-top: 5px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px 15px;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .card-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background-color: #2a2d3d;
+    }
+
+    .card-body {
+      padding: 18px;
+    }
+
+    .card-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-price {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--accent-yellow);
+      background: rgba(245, 158, 11, 0.15);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .card-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .sold-out-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background-color: var(--accent-red);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .admin-fab {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background-color: var(--accent-yellow);
+      color: #000;
+      border: none;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    .admin-panel {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(5px);
+      z-index: 200;
+      overflow-y: auto;
+      padding: 20px 15px;
+    }
+
+    .admin-content {
+      max-width: 500px;
+      margin: 40px auto;
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .admin-content h2 {
+      color: var(--accent-yellow);
+      margin-bottom: 15px;
+      font-size: 1.4rem;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 5px;
+      color: var(--text-muted);
+    }
+
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #111827;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .btn-primary { background: var(--accent-yellow); color: #000; }
+    .btn-danger { background: var(--accent-red); color: #fff; }
+    .btn-secondary { background: #374151; color: #fff; }
+  </style>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <header>
+    <h1>OHG BURGER</h1>
+    <p>Gourmet Burgers & Flavor</p>
+  </header>
+
+  <div class="container">
+    <div id="menuContainer" class="menu-grid">
+      <p style="text-align: center; color: var(--text-muted);">Cargando menú en tiempo real...</p>
+    </div>
+  </div>
+
+  <button class="admin-fab" onclick="openAdminModal()">⚙️</button>
+
+  <div id="adminModal" class="admin-panel">
+    <div class="admin-content">
+      <h2>Administrar Menú</h2>
+      
+      <div id="authSection">
+        <div class="form-group">
+          <label>Contraseña Administrador</label>
+          <input type="password" id="adminPassInput" placeholder="Ingresa la contraseña">
+        </div>
+        <button class="btn btn-primary" onclick="loginAdmin()">Ingresar</button>
+        <button class="btn btn-secondary" onclick="closeAdminModal()">Cancelar</button>
+      </div>
+
+      <div id="formSection" style="display: none;">
+        <form id="productForm" onsubmit="saveProduct(event)">
+          <input type="hidden" id="productId">
+          <div class="form-group">
+            <label>Nombre del Platillo</label>
+            <input type="text" id="pTitle" required placeholder="Ej. Doble Queso Tocino">
+          </div>
+          <div class="form-group">
+            <label>Precio ($)</label>
+            <input type="text" id="pPrice" required placeholder="Ej. 12.99">
+          </div>
+          <div class="form-group">
+            <label>Descripción</label>
+            <textarea id="pDesc" rows="2" placeholder="Ingredientes cortos..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>URL de Imagen</label>
+            <input type="text" id="pImg" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="pSoldOut"> Marcar como Agotado
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Guardar en la Nube</button>
+          <button type="button" class="btn btn-secondary" onclick="closeAdminModal()">Cerrar</button>
+        </form>
+
+        <hr style="border-color: #374151; margin: 20px 0;">
+        <h3 style="font-size: 1rem; color: #fff; margin-bottom: 10px;">Platillos Existentes</h3>
+        <div id="adminItemsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCCJ8p6iLUahYV6f4DWQUFjY01UrXFZwk4",
+      authDomain: "ohg-burger-db.firebaseapp.com",
+      databaseURL: "https://ohg-burger-db-default-rtdb.firebaseio.com",
+      projectId: "ohg-burger-db",
+      storageBucket: "ohg-burger-db.firebasestorage.app",
+      messagingSenderId: "1049128717641",
+      appId: "1:1049128717641:web:b31aafda03ff1a4dca9e98"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const menuRef = db.ref("menu_items");
+
+    let isAdminLoggedIn = false;
+
+    menuRef.on("value", (snapshot) => {
+      const data = snapshot.val();
+      renderMenu(data);
+      if (isAdminLoggedIn) renderAdminList(data);
+    });
+
+    function renderMenu(items) {
+      const container = document.getElementById("menuContainer");
+      container.innerHTML = "";
+
+      if (!items) {
+        container.innerHTML = `<p style="text-align: center; color: var(--text-muted);">No hay productos registrados en el menú.</p>`;
+        return;
+      }
+
+      Object.keys(items).forEach(key => {
+        const item = items[key];
+        const card = document.createElement("div");
+        card.className = "card";
+        
+        const imgSrc = item.img || "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=500";
+        
+        card.innerHTML = `
+          ${item.soldOut ? '<div class="sold-out-badge">Agotado</div>' : ''}
+          <img src="${imgSrc}" class="card-img" alt="${item.title}">
+          <div class="card-body">
+            <div class="card-title-row">
+              <span class="card-title">${item.title}</span>
+              <span class="card-price">$${item.price}</span>
+            </div>
+            <p class="card-desc">${item.desc || ''}</p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openAdminModal() {
+      document.getElementById("adminModal").style.display = "block";
+    }
+
+    function closeAdminModal() {
+      document.getElementById("adminModal").style.display = "none";
+    }
+
+    function loginAdmin() {
+      const pass = document.getElementById("adminPassInput").value;
+      if (pass === "ohg123") {
+        isAdminLoggedIn = true;
+        document.getElementById("authSection").style.display = "none";
+        document.getElementById("formSection").style.display = "block";
+        menuRef.once("value", (snapshot) => renderAdminList(snapshot.val()));
+      } else {
+        alert("Contraseña incorrecta");
+      }
+    }
+
+    function saveProduct(e) {
+      e.preventDefault();
+      const id = document.getElementById("productId").value;
+      const title = document.getElementById("pTitle").value;
+      const price = document.getElementById("pPrice").value;
+      const desc = document.getElementById("pDesc").value;
+      const img = document.getElementById("pImg").value;
+      const soldOut = document.getElementById("pSoldOut").checked;
+
+      const itemData = { title, price, desc, img, soldOut };
+
+      if (id) {
+        menuRef.child(id).update(itemData);
+      } else {
+        menuRef.push(itemData);
+      }
+
+      resetForm();
+    }
+
+    function editItem(id, title, price, desc, img, soldOut) {
+      document.getElementById("productId").value = id;
+      document.getElementById("pTitle").value = title;
+      document.getElementById("pPrice").value = price;
+      document.getElementById("pDesc").value = desc;
+      document.getElementById("pImg").value = img;
+      document.getElementById("pSoldOut").checked = soldOut;
+    }
+
+    function deleteItem(id) {
+      if (confirm("¿Seguro que deseas eliminar este platillo?")) {
+        menuRef.child(id).remove();
+      }
+    }
+
+    function resetForm() {
+      document.getElementById("productId").value = "";
+      document.getElementById("productForm").reset();
+    }
+
+    function renderAdminList(items) {
+      const listContainer = document.getElementById("adminItemsList");
+      listContainer.innerHTML = "";
+      if (!items) return;
+
+      Object.keys(items).forEach(id => {
+        const item = items[id];
+        const row = document.createElement("div");
+        row.style.cssText = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: #111827; padding: 10px; border-radius: 8px;";
+        row.innerHTML = `
+          <div>
+            <strong style="color: #fff;">${item.title}</strong>
+            <span style="color: var(--accent-yellow); font-size: 0.85rem;"> ($${item.price})</span>
+          </div>
+          <div>
+            <button class="btn btn-secondary" style="width: auto; padding: 4px 8px; margin: 0 4px;" onclick="editItem('${id}', '${item.title}', '${item.price}', '${item.desc || ''}', '${item.img || ''}', ${item.soldOut})">✏️</button>
+            <button class="btn btn-danger" style="width: auto; padding: 4px 8px; margin: 0;" onclick="deleteItem('${id}')">🗑️</button>
+          </div>
+        `;
+        listContainer.appendChild(row);
+      });
+    }
+  </script>
+</body>
+</html>
